@@ -1,6 +1,6 @@
 # Week 2 — Predicting EU Developer Salaries with ML
 
-> Can a Random Forest beat a recruiter at guessing a Berlin developer's salary? I trained 3 models on 2,000+ DACH (Germany / Netherlands / Austria / Switzerland) professional developers and let SHAP tell me which features matter.
+> Can a Random Forest beat a recruiter at guessing a Berlin developer's salary? I trained 3 models on 2,696 DACH (Germany / Netherlands / Austria / Switzerland) professional developers and let SHAP tell me which features matter.
 
 **Author:** Pavethran Muthukumaran
 **LinkedIn:** https://www.linkedin.com/in/pavethran-m/
@@ -10,68 +10,85 @@
 
 ## 1. The question
 
-1. How well can a model predict a DACH developer's annual salary from publicly available features (experience, education, company size, languages)?
+1. How well can a model predict a DACH developer's annual salary from publicly available features?
 2. Which features actually drive salary?
-3. Does XGBoost beat a 30-line Random Forest, or is the difference noise?
+3. Does XGBoost beat a plain Random Forest, or is the difference noise?
 
 ## 2. The data
 
 - Source: Stack Overflow Annual Developer Survey 2025 (same CSV as Week 1)
-- Filter: Country in [Germany, Netherlands, Austria, Switzerland]
-- Filter: MainBranch = "I am a developer by profession"
+- Filter: Country in [Germany, Netherlands, Austria, Switzerland], professional developers only
 - Filter: ConvertedCompYearly between $20,000 and $300,000 (removes joke values)
-- Expected rows: ~2,000
-- Target: `ConvertedCompYearly`
+- Final sample: **2,696 developers** (Germany 1,658 / Netherlands 503 / Switzerland 314 / Austria 221)
+- Target: annual compensation in USD
+- Note: the 2025 survey renamed `YearsCodePro` to `WorkExp` — the notebook patches for this.
 
-## 3. Features
+## 3. Models & results
 
-- Numeric: `YearsCodePro`, `YearsCode`, `Age` (midpoint of bucket)
-- Ordinal: `EdLevel` (1=primary → 6=PhD), `OrgSize` (1=freelancer → 9=10k+)
-- Multi-hot: top 12 programming languages
-- One-hot: Country (4 countries)
+| Model | RMSE | MAE | R² |
+|---|---|---|---|
+| Linear Regression | $37,204 | $25,161 | 0.287 |
+| **Random Forest** (winner) | **$36,354** | **$24,152** | **0.319** |
+| XGBoost | $37,119 | $25,236 | 0.290 |
 
-## 4. Models compared
+All three models landed within ~$850 RMSE of each other. XGBoost did not meaningfully beat the simpler models.
 
-| Model | Why |
-|---|---|
-| Linear Regression | Baseline. If complex models can't beat this, complexity is not earning its keep. |
-| Random Forest (300 trees) | Captures non-linearities + feature interactions without tuning hell. |
-| XGBoost (500 rounds, depth 5) | Industry standard for tabular ML. |
+## 4. The 3 findings
 
-Metrics on a held-out 20% test set: RMSE, MAE, R².
+1. **The simple model won.** Random Forest edged out XGBoost, and all three models were within $850 RMSE. The gradient-boosted model did not earn its extra complexity here — reach for the simple model first.
 
-## 5. How to run
+2. **The best model only explains 32% of salary variance.** The other 68% is driven by things no survey captures — negotiation, the specific employer, individual performance. Honest modelling means stating what you cannot predict.
+
+3. **Location and experience beat your tech stack 3–4x.** SHAP mean impact: being in Switzerland +$10,229, years of work experience +$9,152, company size +$5,835. The highest-impact programming language (JavaScript) was only +$2,933.
+
+## 5. SHAP feature importance (mean |SHAP|, USD)
+
+| Rank | Feature | Impact |
+|---|---|---|
+| 1 | Country = Switzerland | $10,229 |
+| 2 | Years of work experience | $9,152 |
+| 3 | Company size | $5,835 |
+| 4 | Years coding | $5,032 |
+| 5 | Language: JavaScript | $2,933 |
+| 6 | Language: Go | $2,181 |
+| 7 | Country = Germany | $2,028 |
+| 8 | Language: C# | $2,016 |
+
+## 6. How to run
 
 ```bash
-# 1. Place so_survey_2025.csv in this folder
-# 2. Set up venv
+# Easiest: open the notebook in Google Colab (one click from GitHub)
+# It auto-downloads the dataset and installs dependencies.
+
+# Or locally:
 python -m venv .venv && .venv\Scripts\activate   # Windows
-# 3. Install
 pip install -r requirements.txt
-# 4. Run
 jupyter notebook eu_salary_prediction.ipynb
 ```
 
-## 6. Tools
+## 7. Tools
 
-Python 3.10+ · pandas · numpy · scikit-learn · xgboost · shap · matplotlib · seaborn · jupyter
+Python 3 · pandas · numpy · scikit-learn · xgboost · shap · matplotlib · seaborn
 
-## 7. Files
+## 8. Files
 
 - `README.md` — this writeup
-- `requirements.txt` — Python deps
-- `eu_salary_prediction.ipynb` — full ML notebook
-- `so_survey_2025.csv` — raw data (gitignored)
-- `eu_salary_xgb_model.joblib` — saved model (generated)
-- `shap_summary.png`, `predicted_vs_actual.png` — plots (generated)
+- `eu_salary_prediction.ipynb` — full executed notebook (load → clean → model → SHAP)
+- `requirements.txt` — Python dependencies
 
-## 8. Status
+## 9. What I would do next
 
-🛠 Building — notebook scaffolded, results coming Saturday.
+- Add `RemoteWork`, `Industry`, `DevType` as features — likely lifts R² above 0.35.
+- Widen the salary filter and check whether XGBoost handles the tails better.
+- Wrap the model in a Streamlit app for a "predict my salary" demo.
 
-## 9. Contact
+## 10. Status
+
+✅ **Complete** — notebook executed, 3 models trained, results above.
+
+## 11. Contact
 
 - LinkedIn: https://www.linkedin.com/in/pavethran-m/
 - Email: pavethranmuthukumaran@gmail.com
 
-Berlin / EU data-science recruiters: if this kind of work matches what your team needs, I am open to chat.
+Berlin / EU data-science recruiters: if this kind of work matches your team, I am open to chat.
